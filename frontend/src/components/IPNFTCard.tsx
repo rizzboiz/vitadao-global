@@ -3,7 +3,7 @@ import { Layers, User, Target, Zap, ExternalLink, Loader2 } from "lucide-react";
 import type { IPNFT } from "../types";
 import { shortenAddress, progressPercent } from "../utils/formatters";
 import { useIPNFT } from "../hooks/useIPNFT";
-import { useWeb3 } from "../context/Web3Context";
+import { useStellar } from "../context/StellarContext";
 
 interface IPNFTCardProps {
   ipnft: IPNFT;
@@ -14,7 +14,7 @@ export default function IPNFTCard({ ipnft }: IPNFTCardProps) {
   const [showFund, setShowFund] = useState(false);
   const [funded, setFunded] = useState(false);
   const { fundIPNFT, isLoading } = useIPNFT();
-  const { isConnected } = useWeb3();
+  const { isConnected } = useStellar();
 
   const progress = progressPercent(ipnft.currentFunding, ipnft.fundingGoal);
   const isFunded = parseFloat(ipnft.currentFunding) >= parseFloat(ipnft.fundingGoal);
@@ -99,7 +99,7 @@ export default function IPNFTCard({ ipnft }: IPNFTCardProps) {
               Funding
             </span>
             <span className="text-gray-300">
-              {ipnft.currentFunding} / {ipnft.fundingGoal} ETH
+              {ipnft.currentFunding} / {ipnft.fundingGoal} XLM
             </span>
           </div>
           <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
@@ -142,7 +142,7 @@ export default function IPNFTCard({ ipnft }: IPNFTCardProps) {
           <div className="mt-3 flex gap-2">
             <input
               type="number"
-              placeholder="ETH amount"
+               placeholder="XLM amount"
               value={fundAmount}
               onChange={(e) => setFundAmount(e.target.value)}
               min="0"

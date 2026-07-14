@@ -15,7 +15,7 @@ import {
 import type { Proposal } from "../types";
 import { shortenAddress, votePercent, formatDate } from "../utils/formatters";
 import { useGovernor } from "../hooks/useGovernor";
-import { useWeb3 } from "../context/Web3Context";
+import { useStellar } from "../context/StellarContext";
 
 interface ProposalCardProps {
   proposal: Proposal;
@@ -40,7 +40,7 @@ export default function ProposalCard({ proposal }: ProposalCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [voted, setVoted] = useState<"for" | "against" | "abstain" | null>(null);
   const { castVote, isLoading } = useGovernor();
-  const { isConnected } = useWeb3();
+  const { isConnected } = useStellar();
 
   const totalVotes =
     parseFloat(proposal.forVotes) +

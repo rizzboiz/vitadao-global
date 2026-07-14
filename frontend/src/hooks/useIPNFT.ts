@@ -1,31 +1,33 @@
 import { useState, useCallback } from "react";
-import { ethers, Contract } from "ethers";
-import { useWeb3 } from "../context/Web3Context";
-import { IPNFT_ABI, getContractAddress } from "../utils/contracts";
+import * as StellarSdk from "@stellar/stellar-sdk";
+import { useStellar } from "../context/StellarContext";
+import { getContractId } from "../utils/contracts";
 
 export function useIPNFT() {
-  const { signer, chainId } = useWeb3();
+  const { address, network, server, signTransaction, networkPassphrase } = useStellar();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  const getContract = useCallback(() => {
-    if (!signer || !chainId) return null;
-    const address = getContractAddress(chainId, "IPNFT");
-    if (!address) return null;
-    return new Contract(address, IPNFT_ABI, signer);
-  }, [signer, chainId]);
+  const getContractIdForNetwork = useCallback(() => {
+    if (!network) return null;
+    return getContractId(network, "IPNFT") || null;
+  }, [network]);
 
   const mintIPNFT = useCallback(
     async (params: {
       title: string;
       researchArea: string;
-      fundingGoal: string; // ETH string
+      fundingGoal: string;
       tokenURI: string;
     }) => {
-      const contract = getContract();
-      if (!contract || !signer) {
+      if (!address || !server || !networkPassphrase) {
         setError("Wallet not connected");
+        return null;
+      }
+      const contractId = getContractIdForNetwork();
+      if (!contractId) {
+        setError("IPNFT contract not deployed");
         return null;
       }
 
@@ -34,22 +36,33 @@ export function useIPNFT() {
       setTxHash(null);
 
       try {
-        const address = await signer.getAddress();
-        const mintFee = await contract.mintFee();
-        const fundingGoalWei = ethers.parseEther(params.fundingGoal);
+        const account = await server.getAccount(address);
+        const contract = new StellarSdk.Contract(contractId);
+        const goalStroops = BigInt(Math.floor(parseFloat(params.fundingGoal) * 10_000_000));
 
-        const tx = await contract.mintIPNFT(
-          address,
-          params.title,
-          params.researchArea,
-          fundingGoalWei,
-          params.tokenURI,
-          { value: mintFee }
+        const call = contract.call(
+          "mint",
+          new StellarSdk.ScVal.ScvAddress(address),
+          new StellarSdk.ScVal.ScvString(params.title),
+          new StellarSdk.ScVal.ScvString(params.researchArea),
+          new StellarSdk.ScVal.ScvString(params.tokenURI),
+          new StellarSdk.ScVal.ScvI128(goalStroops)
         );
 
-        setTxHash(tx.hash);
-        const receipt = await tx.wait();
-        return receipt;
+        const tx = new StellarSdk.TransactionBuilder(account, {
+          fee: "100",
+          networkPassphrase,
+        })
+          .addOperation(call)
+          .setTimeout(30)
+          .build();
+
+        const signedTx = await signTransaction(tx.toXDR());
+        const txResult = await server.sendTransaction(
+          StellarSdk.TransactionBuilder.fromXDR(signedTx, networkPassphrase)
+        );
+        setTxHash(txResult.hash);
+        return txResult;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Mint failed";
         setError(message);
@@ -58,14 +71,18 @@ export function useIPNFT() {
         setIsLoading(false);
       }
     },
-    [getContract, signer]
+    [address, server, networkPassphrase, signTransaction, getContractIdForNetwork]
   );
 
   const fundIPNFT = useCallback(
-    async (tokenId: number, amountEth: string) => {
-      const contract = getContract();
-      if (!contract) {
+    async (tokenId: number, amountXlm: string) => {
+      if (!address || !server || !networkPassphrase) {
         setError("Wallet not connected");
+        return null;
+      }
+      const contractId = getContractIdForNetwork();
+      if (!contractId) {
+        setError("IPNFT contract not deployed");
         return null;
       }
 
@@ -73,12 +90,31 @@ export function useIPNFT() {
       setError(null);
 
       try {
-        const tx = await contract.fundIPNFT(tokenId, {
-          value: ethers.parseEther(amountEth),
-        });
-        setTxHash(tx.hash);
-        const receipt = await tx.wait();
-        return receipt;
+        const account = await server.getAccount(address);
+        const contract = new StellarSdk.Contract(contractId);
+        const amountStroops = BigInt(Math.floor(parseFloat(amountXlm) * 10_000_000));
+
+        const call = contract.call(
+          "record_funding",
+          new StellarSdk.ScVal.ScvU32(tokenId),
+          new StellarSdk.ScVal.ScvAddress(address),
+          new StellarSdk.ScVal.ScvI128(amountStroops)
+        );
+
+        const tx = new StellarSdk.TransactionBuilder(account, {
+          fee: "100",
+          networkPassphrase,
+        })
+          .addOperation(call)
+          .setTimeout(30)
+          .build();
+
+        const signedTx = await signTransaction(tx.toXDR());
+        const txResult = await server.sendTransaction(
+          StellarSdk.TransactionBuilder.fromXDR(signedTx, networkPassphrase)
+        );
+        setTxHash(txResult.hash);
+        return txResult;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Funding failed";
         setError(message);
@@ -87,7 +123,7 @@ export function useIPNFT() {
         setIsLoading(false);
       }
     },
-    [getContract]
+    [address, server, networkPassphrase, signTransaction, getContractIdForNetwork]
   );
 
   return {

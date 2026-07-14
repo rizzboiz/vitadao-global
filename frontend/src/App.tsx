@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Web3Provider } from "./context/Web3Context";
+import { StellarProvider } from "./context/StellarContext";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Governance from "./pages/Governance";
@@ -9,7 +9,7 @@ import Portfolio from "./pages/Portfolio";
 
 export default function App() {
   return (
-    <Web3Provider>
+    <StellarProvider>
       <BrowserRouter>
         <div className="min-h-screen bg-vita-dark">
           <Navbar />
@@ -55,6 +55,6 @@ export default function App() {
           </footer>
         </div>
       </BrowserRouter>
-    </Web3Provider>
+    </StellarProvider>
   );
 }

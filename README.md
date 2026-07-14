@@ -6,91 +6,96 @@ A full-stack decentralized application for VitaDAO — a longevity research DAO 
 
 | Layer | Tech |
 |-------|------|
-| Smart Contracts | Solidity 0.8.20 + OpenZeppelin v5 |
-| Contract Tooling | Hardhat + TypeScript |
+| Smart Contracts | Soroban Rust (Stellar) |
+| Contract Tooling | Cargo + soroban-cli |
 | Frontend | React 18 + TypeScript + Vite |
 | Styling | Tailwind CSS (dark theme) |
-| Web3 | Ethers.js v6 |
-| Routing | React Router v6 |
+| Web3 | @stellar/stellar-sdk + Freighter wallet |
 
 ## Project Structure
 
 ```
 vitadao-dapp/
-├── contracts/          # Hardhat project
+├── contracts/              # Original Solidity contracts (archived — Stellar migration in progress)
+├── stellar-contracts/      # Soroban Rust contracts
 │   ├── contracts/
-│   │   ├── VITA.sol                  # ERC20Votes governance token (100M supply)
-│   │   ├── IPNFT.sol                 # ERC721 IP-NFT for research IP
-│   │   ├── IPNFTFractionalize.sol    # Fractionalize IP-NFTs into ERC20
-│   │   ├── VitaDAOGovernor.sol       # OpenZeppelin Governor DAO
-│   │   └── ResearchFunding.sol       # Community crowdfunding for research
-│   ├── scripts/deploy.ts
-│   ├── test/VitaDAO.test.ts
-│   └── hardhat.config.ts
-└── frontend/           # Vite + React app
+│   │   ├── vita-token/                # SEP-41 governance token (100M supply)
+│   │   ├── ip-nft/                    # IP-NFT for research IP
+│   │   ├── ip-nft-fractionalize/     # Fractionalize IP-NFTs into fungible tokens
+│   │   ├── governance/               # DAO governance with VITA voting
+│   │   └── research-funding/         # Community crowdfunding for research
+│   └── Cargo.toml
+└── frontend/               # Vite + React app
     └── src/
-        ├── pages/      # Home, Governance, IP-NFTs, Funding, Portfolio
-        ├── components/ # Navbar, WalletButton, ProposalCard, IPNFTCard, FundingCard
-        ├── hooks/      # useWallet, useGovernor, useIPNFT, useFunding
-        ├── context/    # Web3Context (ethers.js provider/signer)
-        ├── utils/      # formatters, contract ABIs/addresses, mock data
-        └── types/      # TypeScript interfaces
+        ├── pages/          # Home, Governance, IP-NFTs, Funding, Portfolio
+        ├── components/     # Navbar, WalletButton, ProposalCard, IPNFTCard, FundingCard
+        ├── hooks/          # useStellar, useGovernor, useIPNFT, useFunding
+        ├── context/        # StellarContext (Freighter wallet provider)
+        ├── utils/          # formatters, contract addresses, mock data
+        └── types/          # TypeScript interfaces
 ```
 
 ## Smart Contracts
 
-### VITA.sol
-ERC20Votes token with 100M max supply. Used for DAO voting weight and governance participation.
+### VITA Token (`vita-token`)
+SEP-41 compliant fungible token with 100M max supply, admin minting, and burn support. Used for DAO voting weight and governance participation. 7 decimal places.
 
-### IPNFT.sol
-ERC721 representing research intellectual property. Each token stores title, research area, researcher address, funding goal, and funding progress. Requires a 0.01 ETH mint fee sent to treasury.
+### IP-NFT (`ip-nft`)
+Non-fungible token representing research intellectual property. Each token stores title, research area, researcher address, funding goal, and funding progress. Tracks funding from the research-funding contract.
 
-### IPNFTFractionalize.sol
-Locks an IP-NFT into a vault and issues ERC20 fraction tokens, enabling community ownership of research IP.
+### IP-NFT Fractionalize (`ip-nft-fractionalize`)
+Locks an IP-NFT into a vault and issues fraction tokens, enabling community ownership of research IP. Supports buyout by reclaiming the NFT.
 
-### VitaDAOGovernor.sol
-OpenZeppelin Governor with VITA token voting. 1-block delay, ~1 week voting period, 4% quorum, 100 VITA proposal threshold.
+### Governance (`governance`)
+DAO governance contract with VITA token voting. Proposals require 100 VITA to create, have a 1-ledger delay and ~50,400 ledger voting period, with 4% quorum.
 
-### ResearchFunding.sol
-Crowdfunding contract for research campaigns. Supports ETH contributions, goal-based withdrawal, and contributor refunds if campaigns fail.
+### Research Funding (`research-funding`)
+Crowdfunding contract for research campaigns. Supports XLM contributions, goal-based withdrawal with 2% platform fee, and contributor refunds if campaigns fail.
 
 ## Getting Started
 
 ### 1. Install dependencies
 
 ```bash
-# Contracts
-cd contracts
-npm install
+# Contracts (Soroban)
+cd stellar-contracts
+cargo build
 
 # Frontend
 cd ../frontend
 npm install
 ```
 
-### 2. Compile contracts
+### 2. Build contracts
 
 ```bash
-cd contracts
-npm run compile
+cd stellar-contracts
+cargo build --release
 ```
 
 ### 3. Run tests
 
 ```bash
-cd contracts
-npm test
+cd stellar-contracts
+cargo test
 ```
 
-### 4. Deploy locally
+### 4. Deploy to Futurenet
 
 ```bash
-# Terminal 1: start local node
-cd contracts
-npm run node
+# Install soroban-cli if needed
+cargo install --locked soroban-cli
 
-# Terminal 2: deploy
-npm run deploy:local
+# Deploy contracts to Futurenet
+soroban contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/vita_token.wasm \
+  --network futurenet
+
+soroban contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/ip_nft.wasm \
+  --network futurenet
+
+# ... repeat for other contracts
 ```
 
 ### 5. Run frontend
@@ -100,31 +105,19 @@ cd frontend
 npm run dev
 ```
 
-Then open http://localhost:5173 in your browser with MetaMask installed.
+Then open http://localhost:5173 in your browser with Freighter wallet installed.
 
-### 6. Deploy to Sepolia
+### 6. Configure contracts
 
-Create a `.env` file in `contracts/`:
-```
-SEPOLIA_RPC_URL=https://rpc.sepolia.org
-PRIVATE_KEY=your_private_key_here
-ETHERSCAN_API_KEY=your_etherscan_api_key
-```
-
-Then:
-```bash
-npm run deploy:sepolia
-```
-
-Update the contract addresses in `frontend/src/utils/contracts.ts` with the deployed addresses from `deployments.json`.
+Update the contract IDs in `frontend/src/utils/contracts.ts` with the deployed contract addresses.
 
 ## Features
 
 - **Governance Portal** — Browse proposals, vote For/Against/Abstain with VITA tokens
 - **IP-NFT Gallery** — View, filter, and fund research IP-NFTs; mint new ones with IPFS metadata
-- **Research Funding** — Contribute ETH to community campaigns; create your own
+- **Research Funding** — Contribute XLM to community campaigns; create your own
 - **Portfolio Dashboard** — VITA balance, owned IP-NFTs, voting history, contributions
-- **Wallet Integration** — MetaMask connect/disconnect with auto-reconnect
+- **Wallet Integration** — Freighter wallet connect/disconnect with auto-reconnect (Stellar)
 
 ## License
 

@@ -1,32 +1,34 @@
 import { useState, useCallback } from "react";
-import { ethers, Contract } from "ethers";
-import { useWeb3 } from "../context/Web3Context";
-import { FUNDING_ABI, getContractAddress } from "../utils/contracts";
+import * as StellarSdk from "@stellar/stellar-sdk";
+import { useStellar } from "../context/StellarContext";
+import { getContractId } from "../utils/contracts";
 
 export function useFunding() {
-  const { signer, chainId } = useWeb3();
+  const { address, network, server, signTransaction, networkPassphrase } = useStellar();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  const getContract = useCallback(() => {
-    if (!signer || !chainId) return null;
-    const address = getContractAddress(chainId, "ResearchFunding");
-    if (!address) return null;
-    return new Contract(address, FUNDING_ABI, signer);
-  }, [signer, chainId]);
+  const getContractIdForNetwork = useCallback(() => {
+    if (!network) return null;
+    return getContractId(network, "ResearchFunding") || null;
+  }, [network]);
 
   const createCampaign = useCallback(
     async (params: {
       title: string;
       description: string;
       researchArea: string;
-      goalEth: string;
+      goalXlm: string;
       durationDays: number;
     }) => {
-      const contract = getContract();
-      if (!contract) {
+      if (!address || !server || !networkPassphrase) {
         setError("Wallet not connected");
+        return null;
+      }
+      const contractId = getContractIdForNetwork();
+      if (!contractId) {
+        setError("ResearchFunding contract not deployed");
         return null;
       }
 
@@ -34,17 +36,35 @@ export function useFunding() {
       setError(null);
 
       try {
-        const goalWei = ethers.parseEther(params.goalEth);
-        const tx = await contract.createCampaign(
-          params.title,
-          params.description,
-          params.researchArea,
-          goalWei,
-          params.durationDays
+        const account = await server.getAccount(address);
+        const contract = new StellarSdk.Contract(contractId);
+        const goalStroops = new StellarSdk.ScVal.ScvI128(
+          BigInt(Math.floor(parseFloat(params.goalXlm) * 10_000_000))
         );
-        setTxHash(tx.hash);
-        const receipt = await tx.wait();
-        return receipt;
+
+        const call = contract.call(
+          "create_campaign",
+          new StellarSdk.ScVal.ScvString(params.title),
+          new StellarSdk.ScVal.ScvString(params.description),
+          new StellarSdk.ScVal.ScvString(params.researchArea),
+          goalStroops,
+          new StellarSdk.ScVal.ScvU32(params.durationDays)
+        );
+
+        const tx = new StellarSdk.TransactionBuilder(account, {
+          fee: "100",
+          networkPassphrase,
+        })
+          .addOperation(call)
+          .setTimeout(30)
+          .build();
+
+        const signedTx = await signTransaction(tx.toXDR());
+        const txResult = await server.sendTransaction(
+          StellarSdk.TransactionBuilder.fromXDR(signedTx, networkPassphrase)
+        );
+        setTxHash(txResult.hash);
+        return txResult;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Create campaign failed";
         setError(message);
@@ -53,14 +73,18 @@ export function useFunding() {
         setIsLoading(false);
       }
     },
-    [getContract]
+    [address, server, networkPassphrase, signTransaction, getContractIdForNetwork]
   );
 
   const contribute = useCallback(
-    async (campaignId: number, amountEth: string) => {
-      const contract = getContract();
-      if (!contract) {
+    async (campaignId: number, amountXlm: string) => {
+      if (!address || !server || !networkPassphrase) {
         setError("Wallet not connected");
+        return null;
+      }
+      const contractId = getContractIdForNetwork();
+      if (!contractId) {
+        setError("ResearchFunding contract not deployed");
         return null;
       }
 
@@ -68,12 +92,30 @@ export function useFunding() {
       setError(null);
 
       try {
-        const tx = await contract.contribute(campaignId, {
-          value: ethers.parseEther(amountEth),
-        });
-        setTxHash(tx.hash);
-        const receipt = await tx.wait();
-        return receipt;
+        const account = await server.getAccount(address);
+        const contract = new StellarSdk.Contract(contractId);
+        const amountStroops = BigInt(Math.floor(parseFloat(amountXlm) * 10_000_000));
+
+        const call = contract.call(
+          "contribute",
+          new StellarSdk.ScVal.ScvU32(campaignId),
+          new StellarSdk.ScVal.ScvI128(amountStroops)
+        );
+
+        const tx = new StellarSdk.TransactionBuilder(account, {
+          fee: "100",
+          networkPassphrase,
+        })
+          .addOperation(call)
+          .setTimeout(30)
+          .build();
+
+        const signedTx = await signTransaction(tx.toXDR());
+        const txResult = await server.sendTransaction(
+          StellarSdk.TransactionBuilder.fromXDR(signedTx, networkPassphrase)
+        );
+        setTxHash(txResult.hash);
+        return txResult;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Contribution failed";
         setError(message);
@@ -82,14 +124,18 @@ export function useFunding() {
         setIsLoading(false);
       }
     },
-    [getContract]
+    [address, server, networkPassphrase, signTransaction, getContractIdForNetwork]
   );
 
   const withdraw = useCallback(
     async (campaignId: number) => {
-      const contract = getContract();
-      if (!contract) {
+      if (!address || !server || !networkPassphrase) {
         setError("Wallet not connected");
+        return null;
+      }
+      const contractId = getContractIdForNetwork();
+      if (!contractId) {
+        setError("ResearchFunding contract not deployed");
         return null;
       }
 
@@ -97,10 +143,25 @@ export function useFunding() {
       setError(null);
 
       try {
-        const tx = await contract.withdraw(campaignId);
-        setTxHash(tx.hash);
-        const receipt = await tx.wait();
-        return receipt;
+        const account = await server.getAccount(address);
+        const contract = new StellarSdk.Contract(contractId);
+
+        const call = contract.call("withdraw", new StellarSdk.ScVal.ScvU32(campaignId));
+
+        const tx = new StellarSdk.TransactionBuilder(account, {
+          fee: "100",
+          networkPassphrase,
+        })
+          .addOperation(call)
+          .setTimeout(30)
+          .build();
+
+        const signedTx = await signTransaction(tx.toXDR());
+        const txResult = await server.sendTransaction(
+          StellarSdk.TransactionBuilder.fromXDR(signedTx, networkPassphrase)
+        );
+        setTxHash(txResult.hash);
+        return txResult;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Withdrawal failed";
         setError(message);
@@ -109,7 +170,7 @@ export function useFunding() {
         setIsLoading(false);
       }
     },
-    [getContract]
+    [address, server, networkPassphrase, signTransaction, getContractIdForNetwork]
   );
 
   return {

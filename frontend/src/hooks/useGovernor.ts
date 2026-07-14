@@ -1,28 +1,30 @@
 import { useState, useCallback } from "react";
-import { Contract } from "ethers";
-import { useWeb3 } from "../context/Web3Context";
-import { GOVERNOR_ABI, getContractAddress } from "../utils/contracts";
+import * as StellarSdk from "@stellar/stellar-sdk";
+import { useStellar } from "../context/StellarContext";
+import { getContractId } from "../utils/contracts";
 
-export type VoteSupport = 0 | 1 | 2; // 0=Against, 1=For, 2=Abstain
+export type VoteSupport = 0 | 1 | 2;
 
 export function useGovernor() {
-  const { signer, chainId } = useWeb3();
+  const { address, network, server, signTransaction, networkPassphrase } = useStellar();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  const getContract = useCallback(() => {
-    if (!signer || !chainId) return null;
-    const address = getContractAddress(chainId, "VitaDAOGovernor");
-    if (!address) return null;
-    return new Contract(address, GOVERNOR_ABI, signer);
-  }, [signer, chainId]);
+  const getContractIdForNetwork = useCallback(() => {
+    if (!network) return null;
+    return getContractId(network, "VitaDAOGovernor") || null;
+  }, [network]);
 
   const castVote = useCallback(
     async (proposalId: string, support: VoteSupport, reason?: string) => {
-      const contract = getContract();
-      if (!contract) {
+      if (!address || !server || !networkPassphrase) {
         setError("Wallet not connected");
+        return null;
+      }
+      const contractId = getContractIdForNetwork();
+      if (!contractId) {
+        setError("Governance contract not deployed");
         return null;
       }
 
@@ -31,15 +33,23 @@ export function useGovernor() {
       setTxHash(null);
 
       try {
-        let tx;
-        if (reason) {
-          tx = await contract.castVoteWithReason(proposalId, support, reason);
-        } else {
-          tx = await contract.castVote(proposalId, support);
-        }
-        setTxHash(tx.hash);
-        const receipt = await tx.wait();
-        return receipt;
+        const account = await server.getAccount(address);
+        const contract = new StellarSdk.Contract(contractId);
+
+        let call = contract.call("cast_vote", ...(reason ? [proposalId, support.toString(), reason] : [proposalId, support.toString(), ""]));
+
+        const tx = new StellarSdk.TransactionBuilder(account, {
+          fee: "100",
+          networkPassphrase,
+        })
+          .addOperation(call)
+          .setTimeout(30)
+          .build();
+
+        const signedTx = await signTransaction(tx.toXDR());
+        const txResult = await server.sendTransaction(StellarSdk.TransactionBuilder.fromXDR(signedTx, networkPassphrase));
+        setTxHash(txResult.hash);
+        return txResult;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Vote failed";
         setError(message);
@@ -48,20 +58,23 @@ export function useGovernor() {
         setIsLoading(false);
       }
     },
-    [getContract]
+    [address, server, networkPassphrase, signTransaction, getContractIdForNetwork]
   );
 
   const checkHasVoted = useCallback(
     async (proposalId: string, voterAddress: string): Promise<boolean> => {
-      const contract = getContract();
-      if (!contract) return false;
+      if (!server) return false;
+      const contractId = getContractIdForNetwork();
+      if (!contractId) return false;
       try {
-        return await contract.hasVoted(proposalId, voterAddress);
+        const contract = new StellarSdk.Contract(contractId);
+        const result = await contract.call("has_voted", proposalId, voterAddress);
+        return result === "true";
       } catch {
         return false;
       }
     },
-    [getContract]
+    [server, getContractIdForNetwork]
   );
 
   return {

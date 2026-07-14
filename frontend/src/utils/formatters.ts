@@ -1,19 +1,16 @@
-import { ethers } from "ethers";
-
 export function shortenAddress(address: string, chars = 4): string {
   if (!address) return "";
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
 }
 
-export function formatEther(wei: string | bigint): string {
+export function formatStroops(stroops: string | bigint): string {
   try {
-    const value = ethers.formatEther(wei.toString());
-    const num = parseFloat(value);
-    if (num === 0) return "0";
-    if (num < 0.001) return "< 0.001";
-    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
-    if (num >= 1_000) return `${(num / 1_000).toFixed(2)}K`;
-    return num.toFixed(4).replace(/\.?0+$/, "");
+    const value = Number(stroops) / 10_000_000;
+    if (value === 0) return "0";
+    if (value < 0.001) return "< 0.001";
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+    if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
+    return value.toFixed(4).replace(/\.?0+$/, "");
   } catch {
     return "0";
   }
@@ -21,11 +18,10 @@ export function formatEther(wei: string | bigint): string {
 
 export function formatVITA(amount: string | bigint): string {
   try {
-    const value = ethers.formatEther(amount.toString());
-    const num = parseFloat(value);
-    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
-    if (num >= 1_000) return `${(num / 1_000).toFixed(2)}K`;
-    return num.toLocaleString("en-US", { maximumFractionDigits: 2 });
+    const value = Number(amount) / 10_000_000;
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+    if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
+    return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
   } catch {
     return "0";
   }

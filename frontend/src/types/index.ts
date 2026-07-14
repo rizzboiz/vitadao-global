@@ -7,8 +7,8 @@ export interface Proposal {
   forVotes: string;
   againstVotes: string;
   abstainVotes: string;
-  startBlock: number;
-  endBlock: number;
+  startLedger: number;
+  endLedger: number;
   category: "research" | "treasury" | "parameter" | "other";
   createdAt: string;
 }
@@ -19,7 +19,7 @@ export interface IPNFT {
   description: string;
   researchArea: string;
   researcher: string;
-  fundingGoal: string;  // ETH string
+  fundingGoal: string;
   currentFunding: string;
   imageUrl: string;
   tokenURI: string;
@@ -34,8 +34,8 @@ export interface FundingCampaign {
   description: string;
   researchArea: string;
   researcher: string;
-  goal: string;    // ETH string
-  raised: string;  // ETH string
+  goal: string;
+  raised: string;
   deadline: string;
   withdrawn: boolean;
   cancelled: boolean;
@@ -63,7 +63,7 @@ export interface UserPortfolio {
 
 export interface WalletState {
   address: string | null;
-  chainId: number | null;
+  network: string | null;
   isConnected: boolean;
   isConnecting: boolean;
   balance: string;

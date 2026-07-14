@@ -3,7 +3,7 @@ import { Vote, Filter, Search, PlusCircle } from "lucide-react";
 import { MOCK_PROPOSALS } from "../utils/mockData";
 import ProposalCard from "../components/ProposalCard";
 import type { Proposal } from "../types";
-import { useWeb3 } from "../context/Web3Context";
+import { useStellar } from "../context/StellarContext";
 
 type StatusFilter = "all" | Proposal["status"];
 type CategoryFilter = "all" | Proposal["category"];
@@ -12,7 +12,7 @@ export default function Governance() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [search, setSearch] = useState("");
-  const { isConnected } = useWeb3();
+  const { isConnected } = useStellar();
 
   const filtered = MOCK_PROPOSALS.filter((p) => {
     const matchesStatus = statusFilter === "all" || p.status === statusFilter;

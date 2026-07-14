@@ -245,7 +245,7 @@ export const MOCK_CAMPAIGNS: FundingCampaign[] = [
 ];
 
 export const MOCK_STATS = {
-  totalFunded: "842.3 ETH",
+  totalFunded: "842.3 XLM",
   activeProposals: 2,
   ipnftsMinted: 47,
   activeCampaigns: 3,

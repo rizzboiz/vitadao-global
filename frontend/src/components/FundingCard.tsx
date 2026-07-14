@@ -7,7 +7,7 @@ import {
   formatTimeRemaining,
 } from "../utils/formatters";
 import { useFunding } from "../hooks/useFunding";
-import { useWeb3 } from "../context/Web3Context";
+import { useStellar } from "../context/StellarContext";
 
 interface FundingCardProps {
   campaign: FundingCampaign;
@@ -24,7 +24,7 @@ export default function FundingCard({ campaign }: FundingCardProps) {
   const [amount, setAmount] = useState("");
   const [contributed, setContributed] = useState(false);
   const { contribute, isLoading } = useFunding();
-  const { isConnected } = useWeb3();
+  const { isConnected } = useStellar();
 
   const progress = progressPercent(campaign.raised, campaign.goal);
   const isGoalMet = parseFloat(campaign.raised) >= parseFloat(campaign.goal);
@@ -87,14 +87,14 @@ export default function FundingCard({ campaign }: FundingCardProps) {
             <div className="flex items-center justify-center gap-1 text-vita-teal mb-1">
               <TrendingUp className="w-3 h-3" />
             </div>
-            <p className="text-white text-xs font-semibold">{campaign.raised} ETH</p>
+            <p className="text-white text-xs font-semibold">{campaign.raised} XLM</p>
             <p className="text-gray-500 text-xs">Raised</p>
           </div>
           <div className="bg-gray-800/50 rounded-lg p-2">
             <div className="flex items-center justify-center gap-1 text-vita-purple-light mb-1">
               <Target className="w-3 h-3" />
             </div>
-            <p className="text-white text-xs font-semibold">{campaign.goal} ETH</p>
+            <p className="text-white text-xs font-semibold">{campaign.goal} XLM</p>
             <p className="text-gray-500 text-xs">Goal</p>
           </div>
           <div className="bg-gray-800/50 rounded-lg p-2">
@@ -144,7 +144,7 @@ export default function FundingCard({ campaign }: FundingCardProps) {
               <div className="flex gap-2">
                 <input
                   type="number"
-                  placeholder="ETH amount"
+                  placeholder="XLM amount"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   min="0"

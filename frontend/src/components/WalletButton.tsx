@@ -40,7 +40,7 @@ export default function WalletButton() {
             {shortenAddress(address)}
           </span>
           <span className="text-xs text-gray-500 border-l border-vita-dark-border pl-2">
-            {parseFloat(balance).toFixed(3)} ETH
+            {parseFloat(balance).toFixed(3)} XLM
           </span>
         </div>
         <button

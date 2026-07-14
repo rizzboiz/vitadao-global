@@ -3,7 +3,7 @@ import { FlaskConical, PlusCircle, Search, X, Loader2 } from "lucide-react";
 import { MOCK_CAMPAIGNS } from "../utils/mockData";
 import FundingCard from "../components/FundingCard";
 import { useFunding } from "../hooks/useFunding";
-import { useWeb3 } from "../context/Web3Context";
+import { useStellar } from "../context/StellarContext";
 
 const AREAS = ["All", "Rejuvenation Biotech", "Biomarkers", "Metabolic Aging", "Tools & Infrastructure"];
 
@@ -12,7 +12,7 @@ export default function ResearchFunding() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
-  const { isConnected } = useWeb3();
+  const { isConnected } = useStellar();
   const { createCampaign, isLoading, error: formError, txHash } = useFunding();
 
   const [form, setForm] = useState({
@@ -61,7 +61,7 @@ export default function ResearchFunding() {
               Research Funding
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              Contribute ETH to fund longevity research campaigns
+                Contribute XLM to fund longevity research campaigns
             </p>
           </div>
           {isConnected && (
@@ -78,7 +78,7 @@ export default function ResearchFunding() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-vita-dark-card border border-vita-dark-border rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-vita-teal">{totalRaised.toFixed(1)} ETH</p>
+            <p className="text-2xl font-bold text-vita-teal">{totalRaised.toFixed(1)} XLM</p>
             <p className="text-gray-500 text-xs mt-1">Total Raised</p>
           </div>
           <div className="bg-vita-dark-card border border-vita-dark-border rounded-xl p-4 text-center">
@@ -205,7 +205,7 @@ export default function ResearchFunding() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1.5">Goal (ETH) *</label>
+                      <label className="block text-xs text-gray-400 mb-1.5">Goal (XLM) *</label>
                       <input
                         type="number"
                         required

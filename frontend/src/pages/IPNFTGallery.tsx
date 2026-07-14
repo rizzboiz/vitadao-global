@@ -3,7 +3,7 @@ import { Dna, Search, PlusCircle, X, Loader2 } from "lucide-react";
 import { MOCK_IPNFTS } from "../utils/mockData";
 import IPNFTCard from "../components/IPNFTCard";
 import { useIPNFT } from "../hooks/useIPNFT";
-import { useWeb3 } from "../context/Web3Context";
+import { useStellar } from "../context/StellarContext";
 
 const RESEARCH_AREAS = [
   "All",
@@ -19,7 +19,7 @@ export default function IPNFTGallery() {
   const [areaFilter, setAreaFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [showMintForm, setShowMintForm] = useState(false);
-  const { isConnected } = useWeb3();
+  const { isConnected } = useStellar();
   const { mintIPNFT, isLoading, error: mintError, txHash } = useIPNFT();
 
   const [mintForm, setMintForm] = useState({
@@ -144,7 +144,7 @@ export default function IPNFTGallery() {
 
               <h2 className="text-lg font-bold text-white mb-1">Mint IP-NFT</h2>
               <p className="text-gray-400 text-sm mb-6">
-                Register research intellectual property on-chain. A 0.01 ETH mint fee applies.
+                Register research intellectual property on-chain. A 10 XLM mint fee applies.
               </p>
 
               {mintSuccess ? (
@@ -194,7 +194,7 @@ export default function IPNFTGallery() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Funding Goal (ETH) *</label>
+                    <label className="block text-xs text-gray-400 mb-1.5">Funding Goal (XLM) *</label>
                     <input
                       type="number"
                       required
@@ -234,7 +234,7 @@ export default function IPNFTGallery() {
                         Minting...
                       </>
                     ) : (
-                      "Mint IP-NFT (0.01 ETH)"
+                      "Mint IP-NFT (10 XLM)"
                     )}
                   </button>
                 </form>

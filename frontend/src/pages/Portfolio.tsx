@@ -1,6 +1,6 @@
 import { BarChart3, Dna, Vote, Coins, Wallet, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useWeb3 } from "../context/Web3Context";
+import { useStellar } from "../context/StellarContext";
 import { useWallet } from "../hooks/useWallet";
 import { shortenAddress } from "../utils/formatters";
 import { MOCK_IPNFTS, MOCK_PROPOSALS } from "../utils/mockData";
@@ -22,7 +22,7 @@ const MOCK_CONTRIBUTIONS = [
 ];
 
 export default function Portfolio() {
-  const { isConnected, address } = useWeb3();
+  const { isConnected, address } = useStellar();
   const { connect } = useWallet();
 
   if (!isConnected) {
@@ -238,7 +238,7 @@ export default function Portfolio() {
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-right text-sm font-mono text-vita-teal font-medium">
-                        {c.amount} ETH
+                        {c.amount} XLM
                       </td>
                     </tr>
                   ))}
