@@ -1,9 +1,8 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short,
-    token::Interface as TokenInterface,
-    Address, Env, String, Symbol, Vec, Map,
+    contract, contractimpl, contracttype,
+    token, Address, Env, String, Symbol, Vec,
 };
 
 #[contracttype]
@@ -33,10 +32,6 @@ pub struct Vault {
     pub redeemed: bool,
 }
 
-const DECIMALS: u32 = 7;
-const TOKEN_NAME: &str = "VITA Fractions";
-const TOKEN_SYMBOL: &str = "VITAF";
-
 fn emit_fractionalized(env: &Env, vault_id: u64, token_id: u64, owner: &Address, total: i128) {
     let topics = (Symbol::new(env, "fractionalized"), vault_id, token_id, owner.clone());
     env.events().publish(topics, total);
@@ -50,11 +45,6 @@ fn emit_buyout_initiated(env: &Env, vault_id: u64, price: i128) {
 fn emit_redeemed(env: &Env, vault_id: u64, buyer: &Address) {
     let topics = (Symbol::new(env, "redeemed"), vault_id, buyer.clone());
     env.events().publish(topics, ());
-}
-
-fn emit_transfer(env: &Env, from: &Address, to: &Address, amount: i128) {
-    let topics = (Symbol::new(env, "transfer"), from.clone(), to.clone());
-    env.events().publish(topics, amount);
 }
 
 fn get_vault(env: &Env, vault_id: u64) -> Vault {
@@ -76,11 +66,6 @@ fn set_balance_of(env: &Env, vault_id: u64, account: &Address, amount: i128) {
     env.storage().persistent().set(&DataKey::FractionBalance(vault_id, account.clone()), &amount);
 }
 
-fn get_total_supply_of(env: &Env, vault_id: u64) -> i128 {
-    let vault = get_vault(env, vault_id);
-    vault.total_fractions
-}
-
 #[contract]
 pub struct IpNftFractionalize;
 
@@ -95,11 +80,9 @@ impl IpNftFractionalize {
         env.storage().persistent().set(&DataKey::VaultCount, &0u64);
     }
 
-    pub fn fractionalize(env: Env, token_id: u64, total_fractions: i128) -> u64 {
+    pub fn fractionalize(env: Env, caller: Address, token_id: u64, total_fractions: i128) -> u64 {
+        caller.require_auth();
         assert!(total_fractions > 0, "fractions must be positive");
-        let caller = env.invoker();
-
-        let ipnft_addr: Address = env.storage().persistent().get(&DataKey::IpNftAddress).unwrap();
 
         let mut count: u64 = env.storage().persistent().get(&DataKey::VaultCount).unwrap_or(0);
         let vault_id = count;
@@ -122,8 +105,8 @@ impl IpNftFractionalize {
         vault_id
     }
 
-    pub fn set_buyout_price(env: Env, vault_id: u64, price: i128) {
-        let caller = env.invoker();
+    pub fn set_buyout_price(env: Env, caller: Address, vault_id: u64, price: i128) {
+        caller.require_auth();
         let vault = get_vault(&env, vault_id);
         assert!(vault.original_owner == caller, "not vault owner");
         assert!(!vault.redeemed, "already redeemed");
@@ -136,8 +119,8 @@ impl IpNftFractionalize {
         emit_buyout_initiated(&env, vault_id, price);
     }
 
-    pub fn buyout(env: Env, vault_id: u64) {
-        let buyer = env.invoker();
+    pub fn buyout(env: Env, buyer: Address, vault_id: u64) {
+        buyer.require_auth();
         let vault = get_vault(&env, vault_id);
         assert!(vault.for_sale, "not for sale");
         assert!(!vault.redeemed, "already redeemed");
@@ -180,7 +163,7 @@ mod tests {
         let ipnft_addr = Address::generate(&env);
 
         client.initialize(&admin, &ipnft_addr);
-        let vid = client.fractionalize(&0u64, &1000_0000000i128);
+        let vid = client.fractionalize(&owner, &0u64, &1000_0000000i128);
         assert_eq!(vid, 0);
         assert_eq!(client.balance_of(&vid, &owner), 1000_0000000i128);
     }

@@ -1,0 +1,11 @@
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "link-args=-zstack-size=0"]
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1
+
+[profile.release.package.soroban-sdk]
+opt-level = "z"
+codegen-units = 1

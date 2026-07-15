@@ -1,0 +1,10 @@
+{
+  "name": "deploy-scripts",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@stellar/stellar-sdk": "^16.0.1",
+    "binaryen": "^130.0.0",
+    "wabt": "^1.0.39"
+  }
+}

@@ -118,27 +118,6 @@ impl VitaToken {
         );
     }
 
-    /// Burn tokens from caller
-    pub fn burn(env: Env, from: Address, amount: i128) {
-        from.require_auth();
-        let bal = get_balance(&env, &from);
-        assert!(bal >= amount, "insufficient balance");
-        set_balance(&env, &from, bal - amount);
-        let supply = get_total_supply(&env);
-        env.storage()
-            .persistent()
-            .set(&DataKey::TotalSupply, &(supply - amount));
-        emit_transfer(
-            &env,
-            &from,
-            &Address::from_string(&String::from_str(
-                &env,
-                "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
-            )),
-            amount,
-        );
-    }
-
     /// Transfer admin role
     pub fn set_admin(env: Env, new_admin: Address) {
         let admin: Address = env.storage().persistent().get(&DataKey::Admin).unwrap();

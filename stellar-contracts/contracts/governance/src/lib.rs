@@ -1,8 +1,8 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short,
-    Address, Env, String, Symbol, Vec, Map,
+    contract, contractimpl, contracttype,
+    token, Address, Env, String, Symbol, Vec,
 };
 
 const VOTING_DELAY: u32 = 1;
@@ -49,16 +49,6 @@ pub struct Vote {
     pub reason: String,
 }
 
-#[derive(Clone, PartialEq)]
-pub enum ProposalState {
-    Pending,
-    Active,
-    Passed,
-    Defeated,
-    Cancelled,
-    Executed,
-}
-
 fn emit_proposal_created(env: &Env, id: u64, proposer: &Address, title: &String) {
     let topics = (Symbol::new(env, "proposal_created"), id, proposer.clone());
     env.events().publish(topics, title.clone());
@@ -82,6 +72,19 @@ fn save_proposal(env: &Env, proposal: &Proposal) {
     env.storage().persistent().set(&DataKey::Proposal(proposal.id), proposal);
 }
 
+fn get_votes(env: &Env, voter: &Address, token_addr: &Address) -> i128 {
+    let vita = token::Client::new(env, token_addr);
+    vita.balance(voter)
+}
+
+fn get_total_supply(env: &Env, token_addr: &Address) -> i128 {
+    let vita = token::Client::new(env, token_addr);
+    let supply = vita.balance(&env.current_contract_address());
+    let admin: Address = env.storage().persistent().get(&DataKey::Admin).unwrap();
+    let admin_bal = vita.balance(&admin);
+    supply + admin_bal
+}
+
 #[contract]
 pub struct Governance;
 
@@ -98,17 +101,16 @@ impl Governance {
 
     pub fn propose(
         env: Env,
+        proposer: Address,
         title: String,
         description: String,
         targets: Vec<Address>,
         values: Vec<i128>,
         calldata: Vec<String>,
     ) -> u64 {
-        let proposer = env.invoker();
+        proposer.require_auth();
         let token_addr: Address = env.storage().persistent().get(&DataKey::TokenAddress).unwrap();
-
-        let vita_client = soroban_sdk::token::Client::new(&env, &token_addr);
-        let votes = vita_client.balance(&proposer);
+        let votes = get_votes(&env, &proposer, &token_addr);
         assert!(votes >= PROPOSAL_THRESHOLD, "insufficient voting power to propose");
 
         let mut count: u64 = env.storage().persistent().get(&DataKey::ProposalCount).unwrap_or(0);
@@ -138,8 +140,8 @@ impl Governance {
         id
     }
 
-    pub fn cast_vote(env: Env, proposal_id: u64, support: u32, reason: String) {
-        let voter = env.invoker();
+    pub fn cast_vote(env: Env, voter: Address, proposal_id: u64, support: u32, reason: String) {
+        voter.require_auth();
         let mut proposal = get_proposal(&env, proposal_id);
 
         assert!(!proposal.cancelled, "proposal cancelled");
@@ -156,8 +158,7 @@ impl Governance {
         assert!(!has_voted, "already voted");
 
         let token_addr: Address = env.storage().persistent().get(&DataKey::TokenAddress).unwrap();
-        let vita_client = soroban_sdk::token::Client::new(&env, &token_addr);
-        let weight = vita_client.balance(&voter);
+        let weight = get_votes(&env, &voter, &token_addr);
         assert!(weight > 0, "no voting power");
 
         match support {
@@ -183,8 +184,8 @@ impl Governance {
         emit_vote_cast(&env, proposal_id, &voter, support, weight);
     }
 
-    pub fn execute(env: Env, proposal_id: u64) {
-        let caller = env.invoker();
+    pub fn execute(env: Env, caller: Address, proposal_id: u64) {
+        caller.require_auth();
         let admin: Address = env.storage().persistent().get(&DataKey::Admin).unwrap();
         assert!(caller == admin, "only admin can execute");
 
@@ -196,8 +197,7 @@ impl Governance {
 
         let total_votes = proposal.for_votes + proposal.against_votes + proposal.abstain_votes;
         let token_addr: Address = env.storage().persistent().get(&DataKey::TokenAddress).unwrap();
-        let vita_client = soroban_sdk::token::Client::new(&env, &token_addr);
-        let total_supply = vita_client.total_supply();
+        let total_supply = get_total_supply(&env, &token_addr);
         let quorum = (total_supply * QUORUM_PERCENT as i128) / 100;
 
         assert!(total_votes >= quorum, "quorum not reached");
@@ -208,8 +208,8 @@ impl Governance {
         emit_proposal_executed(&env, proposal_id);
     }
 
-    pub fn cancel(env: Env, proposal_id: u64) {
-        let caller = env.invoker();
+    pub fn cancel(env: Env, caller: Address, proposal_id: u64) {
+        caller.require_auth();
         let admin: Address = env.storage().persistent().get(&DataKey::Admin).unwrap();
         let mut proposal = get_proposal(&env, proposal_id);
         assert!(caller == proposal.proposer || caller == admin, "unauthorized");
@@ -265,8 +265,7 @@ impl Governance {
         }
         let total_votes = proposal.for_votes + proposal.against_votes + proposal.abstain_votes;
         let token_addr: Address = env.storage().persistent().get(&DataKey::TokenAddress).unwrap();
-        let vita_client = soroban_sdk::token::Client::new(&env, &token_addr);
-        let total_supply = vita_client.total_supply();
+        let total_supply = get_total_supply(&env, &token_addr);
         let quorum = (total_supply * QUORUM_PERCENT as i128) / 100;
         if total_votes >= quorum && proposal.for_votes > proposal.against_votes {
             return 2;
@@ -283,7 +282,6 @@ impl Governance {
 mod tests {
     use super::*;
     use soroban_sdk::testutils::Address as _;
-    use soroban_sdk::token::Client as TokenClient;
 
     #[test]
     fn test_propose_and_vote() {

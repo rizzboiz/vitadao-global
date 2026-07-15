@@ -1,9 +1,8 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short,
-    token::Interface as TokenInterface,
-    Address, Env, String, Symbol, Vec,
+    contract, contractimpl, contracttype,
+    token, Address, Env, String, Symbol, Vec,
 };
 
 const PLATFORM_FEE_BPS: u32 = 200;
@@ -15,6 +14,7 @@ const DAY_LEDGERS: u64 = 17280;
 pub enum DataKey {
     Admin,
     FeeRecipient,
+    XlmContract,
     CampaignCount,
     Campaign(u64),
     Contribution(u64, Address),
@@ -94,38 +94,35 @@ fn get_contribution(env: &Env, campaign_id: u64, contributor: &Address) -> i128 
         .unwrap_or(0)
 }
 
-fn xlm_client(env: &Env) -> TokenInterface {
-    let xlm_id = env.register_stellar_asset(None);
-    TokenInterface::new(env, &xlm_id)
-}
-
 #[contract]
 pub struct ResearchFunding;
 
 #[contractimpl]
 impl ResearchFunding {
-    pub fn initialize(env: Env, admin: Address, fee_recipient: Address) {
+    pub fn initialize(env: Env, admin: Address, fee_recipient: Address, xlm_contract: Address) {
         if env.storage().persistent().has(&DataKey::Admin) {
             panic!("already initialized");
         }
         env.storage().persistent().set(&DataKey::Admin, &admin);
         env.storage().persistent().set(&DataKey::FeeRecipient, &fee_recipient);
+        env.storage().persistent().set(&DataKey::XlmContract, &xlm_contract);
         env.storage().persistent().set(&DataKey::CampaignCount, &0u64);
     }
 
     pub fn create_campaign(
         env: Env,
+        researcher: Address,
         title: String,
         description: String,
         research_area: String,
         goal: i128,
         duration_days: u64,
     ) -> u64 {
+        researcher.require_auth();
         assert!(goal > 0, "goal must be positive");
         assert!(duration_days > 0 && duration_days <= MAX_DURATION_DAYS, "invalid duration");
         assert!(!title.is_empty(), "title required");
 
-        let researcher = env.invoker();
         let mut count: u64 = env.storage().persistent().get(&DataKey::CampaignCount).unwrap_or(0);
         let id = count;
         count += 1;
@@ -148,14 +145,15 @@ impl ResearchFunding {
         id
     }
 
-    pub fn contribute(env: Env, campaign_id: u64, amount: i128) {
-        let contributor = env.invoker();
+    pub fn contribute(env: Env, contributor: Address, campaign_id: u64, amount: i128) {
+        contributor.require_auth();
         let mut campaign = get_campaign(&env, campaign_id);
         assert!(!campaign.cancelled, "campaign cancelled");
         assert!(env.ledger().sequence() < campaign.deadline_ledger, "campaign ended");
         assert!(amount > 0, "must send positive amount");
 
-        let xlm = xlm_client(&env);
+        let xlm_addr: Address = env.storage().persistent().get(&DataKey::XlmContract).unwrap();
+        let xlm = token::Client::new(&env, &xlm_addr);
         xlm.transfer(&contributor, &env.current_contract_address(), &amount);
 
         let prev = get_contribution(&env, campaign_id, &contributor);
@@ -170,10 +168,10 @@ impl ResearchFunding {
         emit_contributed(&env, campaign_id, &contributor, amount);
     }
 
-    pub fn withdraw(env: Env, campaign_id: u64) {
-        let researcher = env.invoker();
+    pub fn withdraw(env: Env, caller: Address, campaign_id: u64) {
+        caller.require_auth();
         let campaign = get_campaign(&env, campaign_id);
-        assert!(researcher == campaign.researcher, "not researcher");
+        assert!(caller == campaign.researcher, "not researcher");
         assert!(campaign.raised >= campaign.goal, "goal not reached");
         assert!(!campaign.withdrawn, "already withdrawn");
         assert!(!campaign.cancelled, "campaign cancelled");
@@ -185,20 +183,21 @@ impl ResearchFunding {
         let fee = (campaign.raised * PLATFORM_FEE_BPS as i128) / 10000;
         let payout = campaign.raised - fee;
 
-        let xlm = xlm_client(&env);
+        let xlm_addr: Address = env.storage().persistent().get(&DataKey::XlmContract).unwrap();
+        let xlm = token::Client::new(&env, &xlm_addr);
         if fee > 0 {
             let fee_recipient: Address = env.storage().persistent().get(&DataKey::FeeRecipient).unwrap();
             xlm.transfer(&env.current_contract_address(), &fee_recipient, &fee);
         }
         if payout > 0 {
-            xlm.transfer(&env.current_contract_address(), &researcher, &payout);
+            xlm.transfer(&env.current_contract_address(), &caller, &payout);
         }
 
-        emit_withdrawn(&env, campaign_id, &researcher, payout);
+        emit_withdrawn(&env, campaign_id, &caller, payout);
     }
 
-    pub fn refund(env: Env, campaign_id: u64) {
-        let contributor = env.invoker();
+    pub fn refund(env: Env, contributor: Address, campaign_id: u64) {
+        contributor.require_auth();
         let campaign = get_campaign(&env, campaign_id);
         let expired = env.ledger().sequence() >= campaign.deadline_ledger && campaign.raised < campaign.goal;
         assert!(campaign.cancelled || expired, "not eligible for refund");
@@ -208,14 +207,15 @@ impl ResearchFunding {
 
         env.storage().persistent().remove(&DataKey::Contribution(campaign_id, contributor.clone()));
 
-        let xlm = xlm_client(&env);
+        let xlm_addr: Address = env.storage().persistent().get(&DataKey::XlmContract).unwrap();
+        let xlm = token::Client::new(&env, &xlm_addr);
         xlm.transfer(&env.current_contract_address(), &contributor, &amount);
 
         emit_refunded(&env, campaign_id, &contributor, amount);
     }
 
-    pub fn cancel_campaign(env: Env, campaign_id: u64) {
-        let caller = env.invoker();
+    pub fn cancel_campaign(env: Env, caller: Address, campaign_id: u64) {
+        caller.require_auth();
         let admin: Address = env.storage().persistent().get(&DataKey::Admin).unwrap();
         let campaign = get_campaign(&env, campaign_id);
         assert!(caller == campaign.researcher || caller == admin, "unauthorized");
@@ -256,9 +256,10 @@ impl ResearchFunding {
         if progress > 100 { 100 } else { progress as u64 }
     }
 
-    pub fn set_fee_recipient(env: Env, new_recipient: Address) {
+    pub fn set_fee_recipient(env: Env, caller: Address, new_recipient: Address) {
         let admin: Address = env.storage().persistent().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        caller.require_auth();
+        assert!(caller == admin, "not admin");
         env.storage().persistent().set(&DataKey::FeeRecipient, &new_recipient);
     }
 
@@ -276,25 +277,22 @@ mod tests {
     use super::*;
     use soroban_sdk::testutils::Address as _;
 
-    fn setup_test() -> (Env, Address, Address, Address) {
+    #[test]
+    fn test_create_campaign() {
         let env = Env::default();
         env.mock_all_auths();
         let contract_id = env.register(ResearchFunding, ());
         let client = ResearchFundingClient::new(&env, &contract_id);
+
         let admin = Address::generate(&env);
         let researcher = Address::generate(&env);
         let fee_recipient = Address::generate(&env);
-        client.initialize(&admin, &fee_recipient);
-        (env, admin, researcher, fee_recipient)
-    }
+        let xlm = Address::generate(&env);
 
-    #[test]
-    fn test_create_campaign() {
-        let (env, _admin, researcher, _fr) = setup_test();
-        let client = ResearchFundingClient::new(&env, &env.register(ResearchFunding, ()));
-        client.initialize(&Address::generate(&env), &Address::generate(&env));
+        client.initialize(&admin, &fee_recipient, &xlm);
 
         let id = client.create_campaign(
+            &researcher,
             &String::from_str(&env, "Longevity Study"),
             &String::from_str(&env, "Research on telomere extension"),
             &String::from_str(&env, "Longevity"),
@@ -305,10 +303,5 @@ mod tests {
         let camp = client.campaign(&id);
         assert_eq!(camp.title, String::from_str(&env, "Longevity Study"));
         assert_eq!(camp.goal, 100_0000000i128);
-    }
-
-    #[test]
-    fn test_get_progress() {
-        let (_env, _admin, _researcher, _fr) = setup_test();
     }
 }

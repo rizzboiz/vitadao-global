@@ -5,7 +5,7 @@
 
 use soroban_sdk::{
     contract, contractimpl, contracttype,
-    Address, Env, Map, String, Symbol, Vec,
+    Address, Env, String, Symbol, Vec,
 };
 
 // ── Storage keys ─────────────────────────────────────────────────────────────
