@@ -1,21 +1,16 @@
 # Dependencies
 node_modules/
-contracts/node_modules/
 frontend/node_modules/
 
 # Build outputs
-contracts/artifacts/
-contracts/cache/
-contracts/typechain-types/
-contracts/deployments.json
 frontend/dist/
 frontend/.vite/
+stellar-contracts/target/
 
 # Environment
 .env
 .env.local
 .env.*.local
-contracts/.env
 
 # Logs
 *.log

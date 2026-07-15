@@ -6,7 +6,7 @@ export const MOCK_PROPOSALS: Proposal[] = [
     title: "Fund Senolytics Research at Harvard Aging Lab",
     description:
       "Proposal to allocate 50,000 VITA to fund a 12-month senolytic compound screening study targeting p21-positive senescent cells. Research will be conducted by Dr. Sarah Chen's lab at Harvard. IP rights will be captured as an IP-NFT owned by VitaDAO.",
-    proposer: "0x1234567890abcdef1234567890abcdef12345678",
+    proposer: "GAOXHNW5UFDPRCSOXFDSZX7T2WHFVUT6ICRZDHGOGXBJZTC5XE5NPOFX",
     status: "active",
     forVotes: "2400000",
     againstVotes: "340000",
@@ -21,7 +21,7 @@ export const MOCK_PROPOSALS: Proposal[] = [
     title: "Integrate Longevity Biomarker Dashboard into VitaDAO Portal",
     description:
       "Fund development of a public longevity biomarker tracking dashboard. This will display key aging metrics (epigenetic clocks, telomere length proxies) sourced from VitaDAO-funded research, increasing community engagement and research transparency.",
-    proposer: "0xabcdef1234567890abcdef1234567890abcdef12",
+    proposer: "GDWS6RM5HZSBFHZFSWHYQ2S5J6XG5K7X4Q3H2Y7QHJ6R6JZ7LRDHY2HV",
     status: "passed",
     forVotes: "5100000",
     againstVotes: "210000",
@@ -36,7 +36,7 @@ export const MOCK_PROPOSALS: Proposal[] = [
     title: "Reduce Voting Period from 7 Days to 5 Days",
     description:
       "Proposal to change governance voting period parameter from 50,400 blocks (~7 days) to 36,000 blocks (~5 days). Rationale: faster governance cycles improve responsiveness to time-sensitive research opportunities.",
-    proposer: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    proposer: "GCT2OXJRIYGZ4GZQSM2Y6Q6X7Y7X7Y7X7Y7X7Y7X7Y7X7Y7X7Y7X7Y7",
     status: "defeated",
     forVotes: "980000",
     againstVotes: "3200000",
@@ -51,7 +51,7 @@ export const MOCK_PROPOSALS: Proposal[] = [
     title: "Acquire IP-NFT for NAD+ Precursor Research",
     description:
       "Mint and acquire an IP-NFT covering novel NAD+ precursor synthesis patents from BioVita Inc. This would give VitaDAO governance rights over promising NAD+ metabolism research with potential healthspan applications.",
-    proposer: "0x9876543210fedcba9876543210fedcba98765432",
+    proposer: "GBRPJ2UXMZ7Y5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5",
     status: "pending",
     forVotes: "0",
     againstVotes: "0",
@@ -66,7 +66,7 @@ export const MOCK_PROPOSALS: Proposal[] = [
     title: "Treasury Diversification: Swap 10% VITA for ETH",
     description:
       "Proposal to swap 10% of DAO treasury VITA holdings for ETH to reduce single-asset exposure and ensure operational runway for at least 18 months regardless of VITA price fluctuations.",
-    proposer: "0xfedcba9876543210fedcba9876543210fedcba98",
+    proposer: "GCJZ5G3HYL5X5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5",
     status: "active",
     forVotes: "1800000",
     againstVotes: "1200000",
@@ -85,7 +85,7 @@ export const MOCK_IPNFTS: IPNFT[] = [
     description:
       "IP covering a class of small-molecule TERT activators that extend telomere length in human fibroblasts by 15-20% without measurable off-target effects. Phase 1 pre-clinical data included.",
     researchArea: "Telomere Biology",
-    researcher: "0x1234567890abcdef1234567890abcdef12345678",
+    researcher: "GAOXHNW5UFDPRCSOXFDSZX7T2WHFVUT6ICRZDHGOGXBJZTC5XE5NPOFX",
     fundingGoal: "50",
     currentFunding: "38.5",
     imageUrl:
@@ -101,7 +101,7 @@ export const MOCK_IPNFTS: IPNFT[] = [
     description:
       "A novel CAR-T cell therapy targeting p16-expressing senescent cells with high specificity. Demonstrated 85% clearance of senescent cells in aged mouse models with improved physical performance.",
     researchArea: "Senolytics",
-    researcher: "0xabcdef1234567890abcdef1234567890abcdef12",
+    researcher: "GDWS6RM5HZSBFHZFSWHYQ2S5J6XG5K7X4Q3H2Y7QHJ6R6JZ7LRDHY2HV",
     fundingGoal: "120",
     currentFunding: "67.2",
     imageUrl:
@@ -117,7 +117,7 @@ export const MOCK_IPNFTS: IPNFT[] = [
     description:
       "Proprietary gene expression vector enabling controlled partial Yamanaka reprogramming in vivo. Reverses epigenetic aging by 2-3 years in treated tissue without inducing pluripotency.",
     researchArea: "Epigenetics",
-    researcher: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    researcher: "GCT2OXJRIYGZ4GZQSM2Y6Q6X7Y7X7Y7X7Y7X7Y7X7Y7X7Y7X7Y7X7Y7",
     fundingGoal: "200",
     currentFunding: "200",
     imageUrl:
@@ -133,7 +133,7 @@ export const MOCK_IPNFTS: IPNFT[] = [
     description:
       "A potent mitochondrial biogenesis enhancer that upregulates PGC-1α and improves metabolic fitness. Shows 40% improvement in mitochondrial membrane potential in aged cell cultures.",
     researchArea: "Mitochondria",
-    researcher: "0x9876543210fedcba9876543210fedcba98765432",
+    researcher: "GBRPJ2UXMZ7Y5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5",
     fundingGoal: "75",
     currentFunding: "22.8",
     imageUrl:
@@ -149,7 +149,7 @@ export const MOCK_IPNFTS: IPNFT[] = [
     description:
       "Synthetic NMN analogs with 3x bioavailability over standard NMN. Demonstrated significant NAD+ restoration and improved sirtuin activity in aged primate models.",
     researchArea: "Metabolic Aging",
-    researcher: "0xfedcba9876543210fedcba9876543210fedcba98",
+    researcher: "GCJZ5G3HYL5X5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5",
     fundingGoal: "90",
     currentFunding: "90",
     imageUrl:
@@ -165,7 +165,7 @@ export const MOCK_IPNFTS: IPNFT[] = [
     description:
       "A highly selective mTORC1 inhibitor that activates autophagy and clears protein aggregates with minimal off-target immunosuppression, overcoming key limitations of existing rapalogs.",
     researchArea: "Autophagy",
-    researcher: "0x1111222233334444555566667777888899990000",
+    researcher: "GDM7Z5G3HYL5X5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5",
     fundingGoal: "60",
     currentFunding: "14.3",
     imageUrl:
@@ -184,7 +184,7 @@ export const MOCK_CAMPAIGNS: FundingCampaign[] = [
     description:
       "Supporting Dr. Aubrey de Grey's SENS research agenda targeting the seven hallmarks of aging. Funds will go toward allotopic mitochondrial DNA expression research.",
     researchArea: "Rejuvenation Biotech",
-    researcher: "0x1234567890abcdef1234567890abcdef12345678",
+    researcher: "GAOXHNW5UFDPRCSOXFDSZX7T2WHFVUT6ICRZDHGOGXBJZTC5XE5NPOFX",
     goal: "100",
     raised: "67.4",
     deadline: "2024-03-01T00:00:00Z",
@@ -200,7 +200,7 @@ export const MOCK_CAMPAIGNS: FundingCampaign[] = [
     description:
       "Validation study for the GlycanAge test as a longevity biomarker in a 1,000-person cohort. Will generate open-access dataset for the longevity research community.",
     researchArea: "Biomarkers",
-    researcher: "0xabcdef1234567890abcdef1234567890abcdef12",
+    researcher: "GDWS6RM5HZSBFHZFSWHYQ2S5J6XG5K7X4Q3H2Y7QHJ6R6JZ7LRDHY2HV",
     goal: "45",
     raised: "45",
     deadline: "2024-01-20T00:00:00Z",
@@ -216,7 +216,7 @@ export const MOCK_CAMPAIGNS: FundingCampaign[] = [
     description:
       "High-throughput screen of 10,000 compounds for caloric restriction mimetic activity. Top candidates will undergo ITP-style lifespan testing in C. elegans and mice.",
     researchArea: "Metabolic Aging",
-    researcher: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    researcher: "GCT2OXJRIYGZ4GZQSM2Y6Q6X7Y7X7Y7X7Y7X7Y7X7Y7X7Y7X7Y7X7Y7",
     goal: "80",
     raised: "31.2",
     deadline: "2024-04-15T00:00:00Z",
@@ -232,7 +232,7 @@ export const MOCK_CAMPAIGNS: FundingCampaign[] = [
     description:
       "Building an open-source developer SDK for integrating Horvath-style epigenetic clocks into research applications. Includes Python and JavaScript libraries with REST API.",
     researchArea: "Tools & Infrastructure",
-    researcher: "0x9876543210fedcba9876543210fedcba98765432",
+    researcher: "GBRPJ2UXMZ7Y5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5QY5",
     goal: "25",
     raised: "18.9",
     deadline: "2024-02-28T00:00:00Z",
